@@ -1,25 +1,37 @@
-import {useState} from "react";
-import {c} from "react/compiler-runtime"
+import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
 import './css/list.css';
+import axios from "axios";
 
-let Home = ()=> {
+// 게시글 목록
+function Home () {
 
-    const allPosts = Array.from({length:25},(_, index)=>({
-        id: index + 1,
-        title: `${index + 1} 번째 게시글`,
-        content: `${index + 1} 번째 게시글 내용입니다.`,
-    }))
-
-    const postsPerPage = 10;
+    const [posts, setPosts] = useState([]);
+    const [totalPages, setTotalPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
+    const postsPerPage = 10;
 
-    const indexOfLastPost = currentPage * postsPerPage;
-    const indexOfFirstPost = indexOfLastPost - postsPerPage;
-    const currentPosts = allPosts.slice(indexOfFirstPost, indexOfLastPost);
+    const getPostList = () => {
+        axios.get(`${process.env.REACT_APP_API_URL}/posts`, {
+            params: {
+                page: currentPage -1,
+                size: postsPerPage
+            }
+        }).then(res=>{
+            console.log(res.data.content);
+            setPosts(res.data.content);
+            setTotalPages(res.data.totalPages);
+        }).catch(err=>{
+            console.error("게시글 가져오기 실패:" + err);
+        });
+    };
 
-    const totalPages = Math.ceil(allPosts.length/postsPerPage);
-    const pageNumber = Array.from({length: totalPages},(_, index)=> index + 1)
+    useEffect(() => {
+        getPostList();
+    },[currentPage]);
+
+    // 전체 페이지에 대한 번호 배열 생성
+    const pageNumbers = Array.from({length: totalPages}, (_, index) => index = 1);
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
@@ -29,8 +41,7 @@ let Home = ()=> {
         <div className={"home-container"}>
             <h1 className={"home-title"}>게시글 목록</h1>
             <div className={"posts-list"}>
-                {
-                    currentPosts.map(post=>(
+                {posts.map(post=>(
                         <div key={post.id} className={"post-card"}>
                             <h2 className={"post-title"}>
                                 <Link to={`/post/${post.id}`}>{post.title}</Link>
@@ -43,16 +54,15 @@ let Home = ()=> {
                 }
             </div>
             <div className={"pagination"}>
-                {
-                 pageNumber.map(number=>(
-                     <button key={number} className={`page-btn ${number === currentPage ? 'active' : ''}`}
-                     onClick={()=>{
-                         handlePageChange(number);
-                     }}>
+                {pageNumbers.map((number=>(
+                     <button
+                         key={number}
+                         className={`page-btn ${number === currentPage ? 'active' : ''}`}
+                     onClick={()=>{handlePageChange(number)}}
+                     >
                          {number}
                      </button>
-                 ))
-                }
+                )))}
             </div>
             <Link to={"/create"} className={"create-link"}>게시글 작성하기</Link>
         </div>

@@ -1,22 +1,49 @@
 import {Link, useNavigate, useParams} from "react-router-dom";
 import {useEffect, useState} from "react";
+import axios from "axios";
 
 function PostEdit () {
     const {id} = useParams();
     const navigate = useNavigate();
 
+    let [post, setPost] = useState({
+        title: '',
+        content: '',
+    });
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
 
     useEffect(()=>{
-        setTitle(`${id} 번째 게시물 제목`)
-        setContent(`${id}번째 게시물 상세 내용입니다.`);
-    },[id])
+        axios.get(`${process.env.REACT_APP_API_URL}/posts/${id}`)
+            .then(res=>{
+                console.log(res.data);
+                setPost(res.data);
+            }).catch(err=>{
+            console.error(err);
+            alert("게시글 불러오는데 실패하였습니다.");
+        })
+    },[id]);
+
+    const handleOnChange = (e) => {
+        const {name, value} = e.target;
+        setPost({
+            ...post,
+            [name]: value,
+        })
+    }
 
     const handleSubmit = (e)=>{
         e.preventDefault();
-        alert("게시글이 수정되었습니다.")
-        navigate(`/post/${id}`);
+        axios.put(`${process.env.REACT_APP_API_URL}/posts/${id}`, post)
+             .then(res=>{
+                 console.log(res.data);
+                 alert("게시글이 수정되었습니다.")
+                 navigate(`/post/${id}`);
+             }).catch(err=>{
+                 console.error(err);
+                 alert("게시글 수정에 실패하였습니다.")
+        })
     }
 
     return (
@@ -25,14 +52,14 @@ function PostEdit () {
             <form onSubmit={handleSubmit} className={"post-edit-form"}>
                 <div className={"form-group"}>
                     <label htmlFor={"title"}>제목</label>
-                    <input id={"title"} type={"text"} value={title}
-                           onChange={(e)=>setTitle(e.target.value)}
+                    <input id={"title"} type={"text"} value={post.title}
+                           onChange={handleOnChange} name={"title"}
                            placeholder={"제목을 입력하세요."}/>
                 </div>
                 <div className={"form-group"}>
                     <label htmlFor={"content"}>내용</label>
-                    <textarea id={"content"} value={content}
-                              onChange={(e)=>setContent(e.target.value)}
+                    <textarea id={"content"} value={post.content}
+                              onChange={handleOnChange} name={"content"}
                               placeholder={"내용을 입력하세요."}/>
                 </div>
                 <div className={"button-group"}>
@@ -41,6 +68,6 @@ function PostEdit () {
                 </div>
             </form>
         </div>
-    )
+    );
 }
 export default PostEdit
